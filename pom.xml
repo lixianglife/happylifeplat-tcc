@@ -4,20 +4,21 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.happylifeplat.tcc</groupId>
-    <artifactId>happylifeplat-tcc</artifactId>
+    <groupId>com.hmily.tcc</groupId>
+    <artifactId>hmily-tcc</artifactId>
     <packaging>pom</packaging>
     <version>1.1.1-SNAPSHOT</version>
-    <name>happylifeplat-tcc</name>
+    <name>hmily-tcc</name>
     <modules>
-        <module>happylifeplat-tcc-common</module>
-        <module>happylifeplat-tcc-core</module>
-        <module>happylifeplat-tcc-demo</module>
-        <module>happylifeplat-tcc-dubbo</module>
-        <module>happylifeplat-tcc-springcloud</module>
-        <module>happylifeplat-tcc-annotation</module>
-        <module>happylifeplat-tcc-admin</module>
-        <module>happylifeplat-tcc-motan</module>
+        <module>hmily-tcc-common</module>
+        <module>hmily-tcc-core</module>
+        <module>hmily-tcc-demo</module>
+        <module>hmily-tcc-dubbo</module>
+        <module>hmily-tcc-springcloud</module>
+        <module>hmily-tcc-annotation</module>
+        <module>hmily-tcc-admin</module>
+        <module>hmily-tcc-motan</module>
+        <module>hmily-tcc-spring-boot-starter</module>
     </modules>
 
     <licenses>
@@ -27,8 +28,14 @@
         </license>
     </licenses>
     <scm>
-        <url>https://github.com/yu199195/happylifeplat-tcc.git</url>
+        <url>https://github.com/yu199195/hmily.git</url>
     </scm>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>1.5.9.RELEASE</version>
+    </parent>
 
     <developers>
         <developer>
@@ -66,51 +73,79 @@
         <springfox.version>2.6.1</springfox.version>
         <lombok.version>1.16.14</lombok.version>
         <motan.version>1.0.0</motan.version>
+        <disruptor.version>3.4.0</disruptor.version>
     </properties>
 
 
     <dependencyManagement>
         <dependencies>
-
             <dependency>
-                <!-- Import dependency management from Spring Boot -->
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-dependencies</artifactId>
-                <version>1.5.9.RELEASE</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>com.happylifeplat.tcc</groupId>
-                <artifactId>happylifeplat-tcc-admin</artifactId>
+                <groupId>com.hmily.tcc</groupId>
+                <artifactId>hmily-tcc-admin</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.happylifeplat.tcc</groupId>
-                <artifactId>happylifeplat-tcc-common</artifactId>
+                <groupId>com.hmily.tcc</groupId>
+                <artifactId>hmily-tcc-common</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.happylifeplat.tcc</groupId>
-                <artifactId>happylifeplat-tcc-core</artifactId>
+                <groupId>com.hmily.tcc</groupId>
+                <artifactId>hmily-tcc-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.happylifeplat.tcc</groupId>
-                <artifactId>happylifeplat-tcc-dubbo</artifactId>
+                <groupId>com.hmily.tcc</groupId>
+                <artifactId>hmily-tcc-dubbo</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
             <dependency>
-                <groupId>com.happylifeplat.tcc</groupId>
-                <artifactId>happylifeplat-tcc-springcloud</artifactId>
+                <groupId>com.hmily.tcc</groupId>
+                <artifactId>hmily-tcc-springcloud</artifactId>
                 <version>${project.version}</version>
             </dependency>
+
             <dependency>
-                <groupId>com.happylifeplat.tcc</groupId>
-                <artifactId>happylifeplat-tcc-annotation</artifactId>
+                <groupId>com.hmily.tcc</groupId>
+                <artifactId>hmily-tcc-motan</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.hmily.tcc</groupId>
+                <artifactId>hmily-tcc-annotation</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.hmily.tcc</groupId>
+                <artifactId>hmily-tcc-spring-boot-starter-parent</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.hmily.tcc</groupId>
+                <artifactId>hmily-tcc-spring-boot-starter-dubbo</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.hmily.tcc</groupId>
+                <artifactId>hmily-tcc-spring-boot-starter-springcloud</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.hmily.tcc</groupId>
+                <artifactId>hmily-tcc-spring-boot-starter-motan</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.lmax</groupId>
+                <artifactId>disruptor</artifactId>
+                <version>${disruptor.version}</version>
             </dependency>
 
             <dependency>
@@ -481,17 +516,6 @@
             <url>https://repo.spring.io/libs-release</url>
         </pluginRepository>
     </pluginRepositories>
-
-    <distributionManagement>
-        <repository>
-            <id>releases</id>
-            <url>http://maven.wang-guanjia.com/nexus/content/repositories/releases</url>
-        </repository>
-        <snapshotRepository>
-            <id>snapshots</id>
-            <url>http://maven.wang-guanjia.com/nexus/content/repositories/snapshots</url>
-        </snapshotRepository>
-    </distributionManagement>
 
 
 </project>
