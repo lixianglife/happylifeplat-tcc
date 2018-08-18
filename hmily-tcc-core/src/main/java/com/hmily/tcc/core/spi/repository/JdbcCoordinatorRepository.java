@@ -17,7 +17,6 @@
 
 package com.hmily.tcc.core.spi.repository;
 
-import com.alibaba.druid.pool.DruidDataSource;
 import com.google.common.collect.Maps;
 import com.hmily.tcc.common.bean.entity.Participant;
 import com.hmily.tcc.common.bean.entity.TccTransaction;
@@ -26,15 +25,20 @@ import com.hmily.tcc.common.config.TccDbConfig;
 import com.hmily.tcc.common.constant.CommonConstant;
 import com.hmily.tcc.common.enums.RepositorySupportEnum;
 import com.hmily.tcc.common.exception.TccException;
+import com.hmily.tcc.common.exception.TccRuntimeException;
 import com.hmily.tcc.common.serializer.ObjectSerializer;
 import com.hmily.tcc.common.utils.DbTypeUtils;
+import com.hmily.tcc.common.utils.LogUtil;
 import com.hmily.tcc.common.utils.RepositoryPathUtils;
 import com.hmily.tcc.core.helper.SqlHelper;
 import com.hmily.tcc.core.spi.CoordinatorRepository;
+import com.zaxxer.hikari.HikariDataSource;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.sql.DataSource;
 import java.sql.*;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -52,9 +56,10 @@ import java.util.stream.Collectors;
 @SuppressWarnings("unchecked")
 public class JdbcCoordinatorRepository implements CoordinatorRepository {
 
-    private Logger logger = LoggerFactory.getLogger(JdbcCoordinatorRepository.class);
+   /** logger */
+   private static final Logger LOGGER = LoggerFactory.getLogger(JdbcCoordinatorRepository.class);
 
-    private DruidDataSource dataSource;
+    private DataSource dataSource;
 
     private String tableName;
 
@@ -194,26 +199,35 @@ public class JdbcCoordinatorRepository implements CoordinatorRepository {
 
     @Override
     public void init(final String modelName, final TccConfig txConfig) {
-        dataSource = new DruidDataSource();
-        final TccDbConfig tccDbConfig = txConfig.getTccDbConfig();
-        dataSource.setUrl(tccDbConfig.getUrl());
-        dataSource.setDriverClassName(tccDbConfig.getDriverClassName());
-        dataSource.setUsername(tccDbConfig.getUsername());
-        dataSource.setPassword(tccDbConfig.getPassword());
-        dataSource.setInitialSize(tccDbConfig.getInitialSize());
-        dataSource.setMaxActive(tccDbConfig.getMaxActive());
-        dataSource.setMinIdle(tccDbConfig.getMinIdle());
-        dataSource.setMaxWait(tccDbConfig.getMaxWait());
-        dataSource.setValidationQuery(tccDbConfig.getValidationQuery());
-        dataSource.setTestOnBorrow(tccDbConfig.getTestOnBorrow());
-        dataSource.setTestOnReturn(tccDbConfig.getTestOnReturn());
-        dataSource.setTestWhileIdle(tccDbConfig.getTestWhileIdle());
-        dataSource.setPoolPreparedStatements(tccDbConfig.getPoolPreparedStatements());
-        dataSource.setMaxPoolPreparedStatementPerConnectionSize(tccDbConfig.getMaxPoolPreparedStatementPerConnectionSize());
-        this.tableName = RepositoryPathUtils.buildDbTableName(modelName);
-        //save current database type
-        this.currentDBType = DbTypeUtils.buildByDriverClassName(tccDbConfig.getDriverClassName());
-        executeUpdate(SqlHelper.buildCreateTableSql(tccDbConfig.getDriverClassName(), tableName));
+        try {
+            final TccDbConfig tccDbConfig = txConfig.getTccDbConfig();
+            if (tccDbConfig.getDataSource() != null && StringUtils.isBlank(tccDbConfig.getUrl())) {
+                dataSource = tccDbConfig.getDataSource();
+            } else {
+                HikariDataSource hikariDataSource = new HikariDataSource();
+                hikariDataSource.setJdbcUrl(tccDbConfig.getUrl());
+                hikariDataSource.setDriverClassName(tccDbConfig.getDriverClassName());
+                hikariDataSource.setUsername(tccDbConfig.getUsername());
+                hikariDataSource.setPassword(tccDbConfig.getPassword());
+                hikariDataSource.setMaximumPoolSize(tccDbConfig.getMaxActive());
+                hikariDataSource.setMinimumIdle(tccDbConfig.getMinIdle());
+                hikariDataSource.setConnectionTimeout(tccDbConfig.getConnectionTimeout());
+                hikariDataSource.setIdleTimeout(tccDbConfig.getIdleTimeout());
+                hikariDataSource.setMaxLifetime(tccDbConfig.getMaxLifetime());
+                hikariDataSource.setConnectionTestQuery(tccDbConfig.getConnectionTestQuery());
+                if (tccDbConfig.getDataSourcePropertyMap() != null && !tccDbConfig.getDataSourcePropertyMap().isEmpty()) {
+                    tccDbConfig.getDataSourcePropertyMap().forEach(hikariDataSource::addDataSourceProperty);
+                }
+                dataSource = hikariDataSource;
+            }
+            this.tableName = RepositoryPathUtils.buildDbTableName(modelName);
+//        //save current database type
+            this.currentDBType = DbTypeUtils.buildByDriverClassName(tccDbConfig.getDriverClassName());
+            executeUpdate(SqlHelper.buildCreateTableSql(tccDbConfig.getDriverClassName(), tableName));
+        } catch (Exception e) {
+            LogUtil.error(LOGGER, "jdbc 初始化异常！请检查配置信息:{}", e::getMessage);
+            throw new TccRuntimeException(e);
+        }
     }
 
     @Override
@@ -234,7 +248,7 @@ public class JdbcCoordinatorRepository implements CoordinatorRepository {
             }
             return ps.executeUpdate();
         } catch (SQLException e) {
-            logger.error("executeUpdate-> " + e.getMessage());
+            LOGGER.error("executeUpdate-> " + e.getMessage());
             return FAIL_ROWS;
         } finally {
             close(connection, ps, null);
@@ -276,7 +290,7 @@ public class JdbcCoordinatorRepository implements CoordinatorRepository {
                 list.add(rowData);
             }
         } catch (SQLException e) {
-            logger.error("executeQuery-> " + e.getMessage());
+            LOGGER.error("executeQuery-> " + e.getMessage());
         } finally {
             close(connection, ps, rs);
         }
